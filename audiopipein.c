@@ -69,12 +69,18 @@ audiopipein *api_new(float rate, int isMono, int frameBufferSize)
     resampler_set_buffer_size(ap->resampler, 1024);
     resampler_set_context(ap->resampler, ap);
   }
-  s = AudioHardwareGetPropertyInfo(kAudioHardwarePropertyDefaultInputDevice, &ioPropertyDataSize, &writeable);
 
-  s = AudioHardwareGetProperty(kAudioHardwarePropertyDefaultInputDevice, &ioPropertyDataSize, &inputDevice);
+  AudioObjectPropertyAddress theAddress = { kAudioHardwarePropertyDefaultInputDevice,
+                                            kAudioObjectPropertyScopeGlobal,
+                                            kAudioObjectPropertyElementMaster };
 
-  s = AudioDeviceAddIOProc(inputDevice, audioProc, ap);
-  s = AudioDeviceStart(inputDevice, audioProc);
+  writeable = AudioObjectHasProperty(kAudioHardwarePropertyDefaultInputDevice, &theAddress);
+
+  s = AudioObjectGetPropertyData(kAudioHardwarePropertyDefaultInputDevice, &theAddress, 0, NULL, &ioPropertyDataSize, &inputDevice);
+
+  AudioDeviceIOProcID dev_id = NULL;
+  s = AudioDeviceCreateIOProcID(inputDevice, audioProc, ap, &dev_id);
+  s = AudioDeviceStart(inputDevice, /*audioProc*/ dev_id);
   return ap;
 }
 
